@@ -32,8 +32,14 @@ func (tg *TagCloud) AddTag(tag string) {
 	} else {
 		tg.tagStat[c].OccurrenceCount += 1
 		if c > 0 && tg.tagStat[c-1].OccurrenceCount < tg.tagStat[c].OccurrenceCount {
-			tg.tagMap[tag], tg.tagMap[tg.tagStat[c-1].Tag] = tg.tagMap[tg.tagStat[c-1].Tag], tg.tagMap[tag]
-			tg.tagStat[c-1], tg.tagStat[c] = tg.tagStat[c], tg.tagStat[c-1]
+			for i := c; i > 0; i-- {
+				if tg.tagStat[i-1].OccurrenceCount < tg.tagStat[i].OccurrenceCount {
+					tg.tagMap[tag], tg.tagMap[tg.tagStat[i-1].Tag] = tg.tagMap[tg.tagStat[i-1].Tag], tg.tagMap[tag]
+					tg.tagStat[i-1], tg.tagStat[i] = tg.tagStat[i], tg.tagStat[i-1]
+				} else {
+					break
+				}
+			}
 		}
 	}
 }
