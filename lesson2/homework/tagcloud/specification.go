@@ -2,7 +2,8 @@ package tagcloud
 
 // TagCloud aggregates statistics about used tags
 type TagCloud struct {
-	// TODO: add fields if necessary
+	tagMap  map[string]int
+	tagStat []TagStat
 }
 
 // TagStat represents statistics regarding single tag
@@ -14,15 +15,33 @@ type TagStat struct {
 // New should create a valid TagCloud instance
 // TODO: You decide whether this function should return a pointer or a value
 func New() TagCloud {
-	// TODO: Implement this
-	return TagCloud{}
+	tg := new(TagCloud)
+	tg.tagMap = make(map[string]int)
+	return *tg
 }
 
 // AddTag should add a tag to the cloud if it wasn't present and increase tag occurrence count
 // thread-safety is not needed
 // TODO: You decide whether receiver should be a pointer or a value
-func (TagCloud) AddTag(tag string) {
-	// TODO: Implement this
+func (tg *TagCloud) AddTag(tag string) {
+	c := tg.tagMap[tag]
+	if len(tg.tagStat) == 0 || tg.tagStat[c].Tag != tag {
+		ts := TagStat{tag, 1}
+		tg.tagStat = append(tg.tagStat, ts)
+		tg.tagMap[tag] = len(tg.tagStat) - 1
+	} else {
+		tg.tagStat[c].OccurrenceCount += 1
+		if c > 0 && tg.tagStat[c-1].OccurrenceCount < tg.tagStat[c].OccurrenceCount {
+			for i := c; i > 0; i-- {
+				if tg.tagStat[i-1].OccurrenceCount < tg.tagStat[i].OccurrenceCount {
+					tg.tagMap[tag], tg.tagMap[tg.tagStat[i-1].Tag] = tg.tagMap[tg.tagStat[i-1].Tag], tg.tagMap[tag]
+					tg.tagStat[i-1], tg.tagStat[i] = tg.tagStat[i], tg.tagStat[i-1]
+				} else {
+					break
+				}
+			}
+		}
+	}
 }
 
 // TopN should return top N most frequent tags ordered in descending order by occurrence count
@@ -31,7 +50,12 @@ func (TagCloud) AddTag(tag string) {
 // thread-safety is not needed
 // there are no restrictions on time complexity
 // TODO: You decide whether receiver should be a pointer or a value
-func (TagCloud) TopN(n int) []TagStat {
-	// TODO: Implement this
-	return nil
+func (tg *TagCloud) TopN(n int) []TagStat {
+	var size int
+	if n < len(tg.tagStat) {
+		size = n
+	} else {
+		size = len(tg.tagStat)
+	}
+	return tg.tagStat[:size]
 }
