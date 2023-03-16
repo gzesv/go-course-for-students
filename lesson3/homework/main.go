@@ -9,11 +9,12 @@ import (
 )
 
 type Options struct {
-	From   string
-	To     string
-	Offset uint
-	Limit  uint
-	Conv   string
+	From      string
+	To        string
+	Offset    uint
+	Limit     uint
+	Conv      string
+	BlockSize uint
 }
 
 func ParseFlags() (*Options, error) {
@@ -24,7 +25,7 @@ func ParseFlags() (*Options, error) {
 	flag.UintVar(&opts.Offset, "offset", 0, "bytes inside the input to be skipped when copying")
 	flag.UintVar(&opts.Limit, "limit", 0, "maximum number of bytes to read")
 	flag.StringVar(&opts.Conv, "conv", "", "do conv")
-
+	flag.UintVar(&opts.BlockSize, "block-size", 0, "maximum number of bytes to read")
 	flag.Parse()
 
 	return &opts, nil
@@ -37,94 +38,75 @@ func main() {
 		_, _ = fmt.Fprintln(os.Stderr, "can not parse flags:", err)
 		os.Exit(1)
 	}
+	if strings.Contains(opts.Conv, "lower_case") && strings.Contains(opts.Conv, "upper_case") {
+		_, _ = fmt.Fprintln(os.Stderr, "error conv", err)
+		os.Exit(1)
+	}
+
 	var buf []byte
+
 	if opts.From == "" {
-		/*if opts.Limit == 0 && opts.Offset == 0 {
-			r := io.Reader(os.Stdin)
-			buf, _ = io.ReadAll(r)
-		} else {
-			r := io.Reader(os.Stdin)
-			lr := io.LimitReader(r, int64(opts.Limit+opts.Offset))
-			buf, _ = io.ReadAll(lr)
-		}*/
 		if opts.Limit > 0 {
-			r := io.Reader(os.Stdin)
-			lr := io.LimitReader(r, int64(opts.Limit+opts.Offset))
+			lr := io.LimitReader(os.Stdin, int64(opts.Limit+opts.Offset))
 			buf, _ = io.ReadAll(lr)
 		} else {
-			r := io.Reader(os.Stdin)
-			buf, _ = io.ReadAll(r)
+			buf, _ = io.ReadAll(os.Stdin)
 		}
 	} else {
 		r, err := os.Open(opts.From)
+
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, "error", err)
 			os.Exit(1)
 		}
-		buf, _ = io.ReadAll(r) //io.ReadCloser
-		//fmt.Println(string(buf))
+		buf, _ = io.ReadAll(r)
 		r.Close()
 	}
 
-	if opts.Offset != 0 {
-		if int(opts.Offset) > len(buf) || opts.Offset < 0 {
-			_, _ = fmt.Fprintln(os.Stderr, "error", err)
-			os.Exit(1)
-		}
-		buf = buf[opts.Offset:]
+	if int(opts.Offset) > len(buf) {
+		_, _ = fmt.Fprintln(os.Stderr, "Offset more file", err)
+		os.Exit(1)
 	}
 
-	/*if opts.Limit != 0 {
-		if int(opts.Limit) < len(buf) {
-			buf = buf[:opts.Limit]
-		}
-	}*/
+	if opts.Offset != 0 {
+		buf = buf[opts.Offset:]
+	}
 
 	str := string(buf)
 
 	if opts.Conv != "" {
-		if strings.Contains(opts.Conv, "lower_case") && strings.Contains(opts.Conv, "upper_case") {
-			_, _ = fmt.Fprintln(os.Stderr, "error", err)
+		if !strings.Contains(opts.Conv, "upper_case") && !strings.Contains(opts.Conv, "lower_case") && !strings.Contains(opts.Conv, "trim_spaces") {
+			_, _ = fmt.Fprintln(os.Stderr, "unknown operation", err)
 			os.Exit(1)
-		} else if strings.Contains(opts.Conv, "trim_spaces") {
+		}
+		if strings.Contains(opts.Conv, "trim_spaces") {
 			str = strings.TrimSpace(str)
-		} else if strings.Contains(opts.Conv, "lower_case") {
+		}
+		if strings.Contains(opts.Conv, "lower_case") {
 			str = strings.ToLower(str)
-		} else if strings.Contains(opts.Conv, "upper_case") {
+		}
+		if strings.Contains(opts.Conv, "upper_case") {
 			str = strings.ToUpper(str)
-		} else {
-			_, _ = fmt.Fprintln(os.Stderr, "error", err)
-			os.Exit(1)
 		}
 	}
 
 	if opts.To != "" {
 		_, err := os.Stat(opts.To)
 		if !os.IsNotExist(err) {
-			_, _ = fmt.Fprintln(os.Stderr, "error", err)
+			_, _ = fmt.Fprintln(os.Stderr, "file exist", err)
 			os.Exit(1)
 		}
 		to, err := os.Create(opts.To)
-		if os.IsNotExist(err) {
-			_, _ = fmt.Fprintln(os.Stderr, "error", err)
-			os.Exit(1)
-		}
+		defer to.Close()
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, "error", err)
 			os.Exit(1)
 		}
-		//to.WriteString(string(buf))
-		to.WriteString(str)
-		to.Close()
+		io.WriteString(to, str)
 	} else {
 		if _, err = fmt.Fprint(os.Stdout, str); err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, "error", err)
 			os.Exit(1)
 		}
-		/*if _, err = fmt.Fprint(os.Stdout, string(buf)); err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, "error", err)
-			os.Exit(1)
-		}*/
-		//fmt.Print(string(buf))
 	}
 }
