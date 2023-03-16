@@ -60,7 +60,11 @@ func main() {
 			os.Exit(1)
 		}
 		buf, _ = io.ReadAll(r)
-		r.Close()
+		err = r.Close()
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, "error", err)
+			os.Exit(1)
+		}
 	}
 
 	if int(opts.Offset) > len(buf) {
@@ -102,7 +106,11 @@ func main() {
 			_, _ = fmt.Fprintln(os.Stderr, "error", err)
 			os.Exit(1)
 		}
-		io.WriteString(to, str)
+		_, err = io.WriteString(to, str)
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, "error", err)
+			os.Exit(1)
+		}
 	} else {
 		if _, err = fmt.Fprint(os.Stdout, str); err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, "error", err)
