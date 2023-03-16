@@ -101,12 +101,16 @@ func main() {
 			os.Exit(1)
 		}
 		to, err := os.Create(opts.To)
-		defer to.Close()
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, "error", err)
 			os.Exit(1)
 		}
 		_, err = io.WriteString(to, str)
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, "error", err)
+			os.Exit(1)
+		}
+		err = to.Close()
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, "error", err)
 			os.Exit(1)
