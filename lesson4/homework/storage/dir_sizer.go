@@ -5,7 +5,7 @@ import (
 	"errors"
 	"runtime"
 	"sync"
-	"time"
+	"sync/atomic"
 )
 
 // Result represents the Size function result
@@ -41,8 +41,8 @@ var vale int64
 var co int64
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	a.maxWorkersCount = 4
-	runtime.GOMAXPROCS(a.maxWorkersCount)
+	//a.maxWorkersCount = 4
+	//runtime.GOMAXPROCS(a.maxWorkersCount)
 	vale = 0
 	co = 0
 	//var fileCount int64
@@ -208,12 +208,13 @@ func getFileSize(file []File, ctx context.Context /*, r chan int64*/) error {
 		if err != nil {
 			return err
 		}
-		co += 1
-		vale += s
+		atomic.AddInt64(&co, 1)
+		atomic.AddInt64(&vale, s)
+		runtime.Gosched()
 		//r <- s
 	}
-	time.Sleep(150 * time.Nanosecond)
-	runtime.Gosched()
+	//time.Sleep(150 * time.Nanosecond)
+
 	return err
 	//}()
 	//return err
