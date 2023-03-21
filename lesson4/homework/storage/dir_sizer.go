@@ -37,7 +37,7 @@ func NewSizer() DirSizer {
 }
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	a.maxWorkersCount = 4
+	a.maxWorkersCount = 1
 	runtime.GOMAXPROCS(a.maxWorkersCount)
 
 	fileCount = 0
