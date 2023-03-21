@@ -45,12 +45,12 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	runtime.GOMAXPROCS(a.maxWorkersCount)
 	var fileCount int64
 	var sizeFile int64
-	fileSize := make(chan int64)
+	fileSize := make(chan int64, 1)
 	//defer close(fileSize)
 	//ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
-	dir, file, err := d.Ls(ctx)
-	if err != nil {
-		return Result{}, err
+	dir, file, er := d.Ls(ctx)
+	if er != nil {
+		return Result{}, er
 	}
 	if file == nil {
 		return Result{}, errors.New("file does not exist")
@@ -83,13 +83,15 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = walkDir(dir, ctx, fileSize)
+		er = walkDir(dir, ctx, fileSize)
+		runtime.Gosched()
 	}()
 	wg.Add(1)
 	go func() {
 		//time.Sleep(15000 * time.Nanosecond)
 		defer wg.Done()
-		err = getFileSize(file, ctx, fileSize)
+		er = getFileSize(file, ctx, fileSize)
+		runtime.Gosched()
 	}()
 	/*wg.Add(1)
 	go func() {
@@ -120,6 +122,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 			sizeFile += size
 			time.Sleep(150 * time.Nanosecond)
 		}
+		runtime.Gosched()
 	}()
 	wg.Wait()
 	//close(fileSize)
@@ -131,7 +134,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 		fileCount++
 		sizeFile += size
 	}*/
-	return Result{Size: sizeFile, Count: fileCount}, err
+	return Result{Size: sizeFile, Count: fileCount}, er
 	/*//var fileCount int64
 	runtime.GOMAXPROCS(a.maxWorkersCount)
 	vale = 0
@@ -186,7 +189,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	return Result{Size: vale, Count: co}, err*/
 }
 
-func getFileSize(file []File, ctx context.Context, r chan<- int64) error {
+func getFileSize(file []File, ctx context.Context, r chan int64) error {
 	//time.Sleep(150 * time.Nanosecond)
 	var err error
 	//wg.Add(1)
@@ -206,12 +209,13 @@ func getFileSize(file []File, ctx context.Context, r chan<- int64) error {
 		r <- s
 	}
 	//time.Sleep(150 * time.Nanosecond)
+	runtime.Gosched()
 	return err
 	//}()
 	//return err
 }
 
-func walkDir(d []Dir, ctx context.Context, r chan<- int64) error {
+func walkDir(d []Dir, ctx context.Context, r chan int64) error {
 	//time.Sleep(15000 * time.Nanosecond)
 	//var err error
 	//wg.Add(1)
@@ -242,6 +246,7 @@ func walkDir(d []Dir, ctx context.Context, r chan<- int64) error {
 		//time.Sleep(150 * time.Nanosecond)
 		//}
 	}
+	runtime.Gosched()
 	return nil
 	//}()
 	//return err
