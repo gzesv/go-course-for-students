@@ -51,6 +51,11 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	if file == nil {
 		return Result{}, err
 	}
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		err = a.walkDir(dir, ctx)
+	}()
 	var once sync.Once
 	a.wg.Add(1)
 	go func() {
@@ -58,12 +63,6 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 			defer a.wg.Done()
 			err = a.getFileSize(file, ctx)
 		})
-	}()
-
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		err = a.walkDir(dir, ctx)
 	}()
 
 	a.wg.Wait()
