@@ -43,6 +43,8 @@ var co int64
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	a.maxWorkersCount = 4
 	runtime.GOMAXPROCS(a.maxWorkersCount)
+	vale = 0
+	co = 0
 	//var fileCount int64
 	//var sizeFile int64
 	//fileSize := make(chan int64)
