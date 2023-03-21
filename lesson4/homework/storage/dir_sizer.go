@@ -40,6 +40,7 @@ var co int64
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	//var fileCount int64
+	runtime.GOMAXPROCS(a.maxWorkersCount)
 	vale = 0
 	co = 0
 	var err error
