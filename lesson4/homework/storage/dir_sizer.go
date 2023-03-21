@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 var fileCount int64
@@ -43,7 +44,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	fileCount = 0
 	sizeFile = 0
 	dir, file, err := d.Ls(ctx)
-
+	time.Sleep(100 * time.Millisecond)
 	if err != nil {
 		return Result{}, err
 	}
