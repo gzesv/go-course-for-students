@@ -25,19 +25,14 @@ type DirSizer interface {
 type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
 	maxWorkersCount int
-
-	// TODO: add other fields as you wish
+	wg              sync.WaitGroup
+	m               sync.Mutex
 }
 
 // NewSizer returns new DirSizer instance
 func NewSizer() DirSizer {
 	return &sizer{}
 }
-
-var wg sync.WaitGroup
-
-//var vale int64
-//var co int64
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	a.maxWorkersCount = 4
@@ -54,19 +49,19 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	if file == nil {
 		return Result{}, err
 	}
-	wg.Add(1)
+	a.wg.Add(1)
 	go func() {
-		defer wg.Done()
-		err = getFileSize(file, ctx, fileSize)
+		defer a.wg.Done()
+		err = a.getFileSize(file, ctx, fileSize)
 	}()
 	//wg.Add(1)
 	go func() {
 		//defer wg.Done()
-		err = walkDir(dir, ctx, fileSize)
+		err = a.walkDir(dir, ctx, fileSize)
 	}()
-	wg.Add(1)
+	a.wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer a.wg.Done()
 		for size := range fileSize {
 			fileCount++
 			sizeFile += size
@@ -75,7 +70,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 		close(fileSize)
 	}()
 
-	wg.Wait()
+	a.wg.Wait()
 	/*time.Sleep(1000 * time.Millisecond)
 	for size := range fileSize {
 		fileCount++
@@ -84,11 +79,13 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	return Result{Size: sizeFile, Count: fileCount}, err
 }
 
-func getFileSize(file []File, ctx context.Context, r chan<- int64) error {
-	defer wg.Done()
+func (a *sizer) getFileSize(file []File, ctx context.Context, r chan<- int64) error {
+	defer a.wg.Done()
 	//time.Sleep(150 * time.Nanosecond)
-	wg.Add(1)
+
+	a.wg.Add(1)
 	for _, st := range file {
+		a.m.Lock()
 		s, err := st.Stat(ctx)
 		if file == nil {
 			return err
@@ -98,13 +95,15 @@ func getFileSize(file []File, ctx context.Context, r chan<- int64) error {
 		}
 		//r <- Result{s, 1}
 		r <- s
+		a.m.Unlock()
 	}
+
 	//time.Sleep(150 * time.Nanosecond)
 	return nil
 }
 
-func walkDir(d []Dir, ctx context.Context, r chan<- int64) error {
-	defer wg.Done()
+func (a *sizer) walkDir(d []Dir, ctx context.Context, r chan<- int64) error {
+	defer a.wg.Done()
 	//time.Sleep(150 * time.Nanosecond)
 	for k := 0; k < len(d); k++ {
 		//wg.Add(1)
@@ -116,13 +115,13 @@ func walkDir(d []Dir, ctx context.Context, r chan<- int64) error {
 		if file == nil {
 			return err
 		}
-		err = getFileSize(file, ctx, r)
+		err = a.getFileSize(file, ctx, r)
 		if err != nil {
 			return err
 		}
 		if dir != nil {
-			wg.Add(1)
-			err = walkDir(dir, ctx, r)
+			a.wg.Add(1)
+			err = a.walkDir(dir, ctx, r)
 			if err != nil {
 				return err
 			}
