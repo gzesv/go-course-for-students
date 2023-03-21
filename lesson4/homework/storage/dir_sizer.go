@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime"
 	"sync"
-	"sync/atomic"
+	"time"
 )
 
 // Result represents the Size function result
@@ -39,7 +39,49 @@ var vale int64
 var co int64
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	//var fileCount int64
+	a.maxWorkersCount = 4
+	runtime.GOMAXPROCS(a.maxWorkersCount)
+	var fileCount int64
+	var sizeFile int64
+	fileSize := make(chan int64)
+
+	dir, file, err := d.Ls(ctx)
+
+	if err != nil {
+		return Result{}, err
+	}
+	if file == nil {
+		return Result{}, err
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err = getFileSize(file, ctx, fileSize)
+	}()
+	//wg.Add(1)
+	go func() {
+		//defer wg.Done()
+		err = walkDir(dir, ctx, fileSize)
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for size := range fileSize {
+			fileCount++
+			sizeFile += size
+			time.Sleep(150 * time.Nanosecond)
+		}
+		close(fileSize)
+	}()
+
+	wg.Wait()
+	/*time.Sleep(1000 * time.Millisecond)
+	for size := range fileSize {
+		fileCount++
+		sizeFile += size
+	}*/
+	return Result{Size: sizeFile, Count: fileCount}, err
+	/*//var fileCount int64
 	runtime.GOMAXPROCS(a.maxWorkersCount)
 	vale = 0
 	co = 0
@@ -64,12 +106,12 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = getFileSize(file, ctx /*, fileSize*/)
+		go getFileSize(file, ctx /*, fileSize)
 	}()
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = walkDir(dir, ctx /*, fileSize*/)
+		err = walkDir(dir, ctx , fileSize)
 	}()
 	//wg.Add(1)
 	//go func() {
@@ -78,22 +120,71 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 		fileCount++
 		sizeFile += size
 	time.Sleep(150 * time.Nanosecond)
-	}*/
+	}
 	//sl <- fileSize
 	//time.Sleep(150 * time.Nanosecond)
 	//}()
 	//time.Sleep(1500 * time.Nanosecond)
 	wg.Wait()
-	/*close(fileSize)*/
+	/*close(fileSize)
 	/*time.Sleep(1000 * time.Millisecond)
 	for size := range fileSize {
 		fileCount++
 		sizeFile += size
-	}*/
-	return Result{Size: vale, Count: co}, err
+	}
+	return Result{Size: vale, Count: co}, err*/
 }
 
-func getFileSize(file []File, ctx context.Context /*, r chan<- int64*/) error {
+func getFileSize(file []File, ctx context.Context, r chan<- int64) error {
+	defer wg.Done()
+	//time.Sleep(150 * time.Nanosecond)
+	wg.Add(1)
+	for _, st := range file {
+		s, err := st.Stat(ctx)
+		if file == nil {
+			return err
+		}
+		if err != nil {
+			return err
+		}
+		//r <- Result{s, 1}
+		r <- s
+	}
+	//time.Sleep(150 * time.Nanosecond)
+	return nil
+}
+
+func walkDir(d []Dir, ctx context.Context, r chan<- int64) error {
+	defer wg.Done()
+	//time.Sleep(150 * time.Nanosecond)
+	for k := 0; k < len(d); k++ {
+		//wg.Add(1)
+
+		dir, file, err := d[k].Ls(ctx)
+		if err != nil {
+			return err
+		}
+		if file == nil {
+			return err
+		}
+		err = getFileSize(file, ctx, r)
+		if err != nil {
+			return err
+		}
+		if dir != nil {
+			wg.Add(1)
+			err = walkDir(dir, ctx, r)
+			if err != nil {
+				return err
+			}
+			//time.Sleep(150 * time.Nanosecond)
+		}
+	}
+	return nil
+}
+
+/*
+func getFileSize(file []File, ctx context.Context /*, r chan<- int64) error {
 	wg.Add(1)
 	defer wg.Done()
 	atomic.AddInt64(&co, int64(len(file)))
@@ -111,11 +202,11 @@ func getFileSize(file []File, ctx context.Context /*, r chan<- int64*/) error {
 		//r <- s
 
 	}
-	runtime.Gosched()
+	//runtime.Gosched()
 	return nil
 }
 
-func walkDir(d []Dir, ctx context.Context /*, r chan<- int64*/) error {
+func walkDir(d []Dir, ctx context.Context /*, r chan<- int64) error {
 	//defer wg.Done()
 	for k := 0; k < len(d); k++ {
 		dir, file, err := d[k].Ls(ctx)
@@ -125,14 +216,14 @@ func walkDir(d []Dir, ctx context.Context /*, r chan<- int64*/) error {
 		if file == nil {
 			return err
 		}
-		err = getFileSize(file, ctx /*, r*/)
+		err = getFileSize(file, ctx /*, r)
 		if err != nil {
 			return err
 		}
 		if dir != nil {
-			//wg.Add(1)
+			wg.Add(1)
 			//go func() {
-			err = walkDir(dir, ctx /*, r*/)
+			err = walkDir(dir, ctx /*, r)
 			//}()
 
 			if err != nil {
@@ -140,6 +231,6 @@ func walkDir(d []Dir, ctx context.Context /*, r chan<- int64*/) error {
 			}
 		}
 	}
-	runtime.Gosched()
+	//runtime.Gosched()
 	return nil
-}
+}*/
