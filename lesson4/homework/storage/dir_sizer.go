@@ -35,8 +35,9 @@ func NewSizer() DirSizer {
 }
 
 var wg sync.WaitGroup
-var vale int64
-var co int64
+
+//var vale int64
+//var co int64
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	a.maxWorkersCount = 4
