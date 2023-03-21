@@ -26,7 +26,6 @@ type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
 	maxWorkersCount int
 	wg              sync.WaitGroup
-	m               sync.Mutex
 }
 
 // NewSizer returns new DirSizer instance
@@ -54,9 +53,9 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 		defer a.wg.Done()
 		err = a.getFileSize(file, ctx, fileSize)
 	}()
-	//wg.Add(1)
+	a.wg.Add(1)
 	go func() {
-		//defer wg.Done()
+		defer a.wg.Done()
 		err = a.walkDir(dir, ctx, fileSize)
 	}()
 	a.wg.Add(1)
@@ -85,7 +84,6 @@ func (a *sizer) getFileSize(file []File, ctx context.Context, r chan<- int64) er
 
 	a.wg.Add(1)
 	for _, st := range file {
-		a.m.Lock()
 		s, err := st.Stat(ctx)
 		if file == nil {
 			return err
@@ -95,18 +93,15 @@ func (a *sizer) getFileSize(file []File, ctx context.Context, r chan<- int64) er
 		}
 		//r <- Result{s, 1}
 		r <- s
-		a.m.Unlock()
 	}
-
-	//time.Sleep(150 * time.Nanosecond)
 	return nil
 }
 
 func (a *sizer) walkDir(d []Dir, ctx context.Context, r chan<- int64) error {
 	defer a.wg.Done()
+
 	//time.Sleep(150 * time.Nanosecond)
 	for k := 0; k < len(d); k++ {
-		//wg.Add(1)
 
 		dir, file, err := d[k].Ls(ctx)
 		if err != nil {
