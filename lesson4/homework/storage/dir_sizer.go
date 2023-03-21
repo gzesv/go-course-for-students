@@ -41,7 +41,7 @@ var vale int64
 var co int64
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	//a.maxWorkersCount = 4
+	a.maxWorkersCount = 4
 	//runtime.GOMAXPROCS(a.maxWorkersCount)
 	vale = 0
 	co = 0
