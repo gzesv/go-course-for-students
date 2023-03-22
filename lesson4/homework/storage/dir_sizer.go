@@ -55,7 +55,6 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 		defer a.wg.Done()
 		er := a.walkDir(dir, ctx)
 		err = er
-		return
 	}()
 	a.wg.Add(1)
 	go func() {
