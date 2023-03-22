@@ -50,12 +50,10 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	if file == nil {
 		return Result{}, errors.New("file does not exist")
 	}
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		er := a.walkDir(dir, ctx)
-		err = er
-	}()
+	err = a.walkDir(dir, ctx)
+	if err != nil {
+		return Result{}, err
+	}
 	a.wg.Add(1)
 	go func() {
 		defer a.wg.Done()
@@ -69,6 +67,14 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 			atomic.AddInt64(&sizeFile, s)
 		}
 	}()
+	/*a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+
+		err = er
+	}()
+
+	*/
 	if err != nil {
 		return Result{}, err
 	}
