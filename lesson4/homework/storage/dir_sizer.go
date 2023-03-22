@@ -91,7 +91,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 }*/
 
 func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
-	for k := 0; k < len(d); k++ {
+	/*for k := 0; k < len(d); k++ {
 		dir, file, err := d[k].Ls(ctx)
 		if err != nil {
 			return err
@@ -135,5 +135,57 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 			return err
 		}
 	}
-	return nil
+	return nil*/
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			for k := 0; k < len(d); k++ {
+				dir, file, err := d[k].Ls(ctx)
+				if err != nil {
+					return err
+				}
+				if file == nil {
+					return errors.New("file does not exist")
+				}
+				a.wg.Add(1)
+				go func() {
+					defer a.wg.Done()
+					for _, st := range file {
+						s, er := st.Stat(ctx)
+						if file == nil {
+							err = errors.New("file does not exist")
+							return
+						}
+						if er != nil {
+							err = er
+							return
+						}
+						atomic.AddInt64(&fileCount, 1)
+						atomic.AddInt64(&sizeFile, s)
+					}
+				}()
+				//err = a.getFileSize(file, ctx)
+				if err != nil {
+					return err
+				}
+				if dir != nil {
+					a.wg.Add(1)
+					go func() {
+						defer a.wg.Done()
+						er := a.walkDir(dir, ctx)
+						if er != nil {
+							err = er
+							return
+						}
+					}()
+				}
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
 }
