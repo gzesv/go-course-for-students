@@ -2,10 +2,10 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 var fileCount int64
@@ -38,76 +38,96 @@ func NewSizer() DirSizer {
 }
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	a.maxWorkersCount = 1
+	a.maxWorkersCount = 4
 	runtime.GOMAXPROCS(a.maxWorkersCount)
 
 	fileCount = 0
 	sizeFile = 0
 	dir, file, err := d.Ls(ctx)
-	time.Sleep(100 * time.Millisecond)
 	if err != nil {
 		return Result{}, err
 	}
 	if file == nil {
-		return Result{}, err
+		return Result{}, errors.New("file does not exist")
 	}
 	a.wg.Add(1)
 	go func() {
 		defer a.wg.Done()
-		err = a.walkDir(dir, ctx)
+		er := a.walkDir(dir, ctx)
+		err = er
+		return
 	}()
-	var once sync.Once
 	a.wg.Add(1)
 	go func() {
-		once.Do(func() {
-			defer a.wg.Done()
-			err = a.getFileSize(file, ctx)
-		})
+		defer a.wg.Done()
+		for _, st := range file {
+			s, er := st.Stat(ctx)
+			if er != nil {
+				err = er
+				break
+			}
+			atomic.AddInt64(&fileCount, 1)
+			atomic.AddInt64(&sizeFile, s)
+		}
 	}()
-
+	if err != nil {
+		return Result{}, err
+	}
 	a.wg.Wait()
 
 	return Result{Size: sizeFile, Count: fileCount}, err
 }
 
-func (a *sizer) getFileSize(file []File, ctx context.Context) error {
+/*func (a *sizer) getFileSize(file []File, ctx context.Context) error {
 	defer a.wg.Done()
 	a.wg.Add(1)
-	for _, st := range file {
-		s, err := st.Stat(ctx)
-		if file == nil {
-			return err
-		}
-		if err != nil {
-			return err
-		}
-		atomic.AddInt64(&fileCount, 1)
-		atomic.AddInt64(&sizeFile, s)
-	}
+
 	return nil
-}
+}*/
 
 func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
-	defer a.wg.Done()
-	a.wg.Add(1)
-
 	for k := 0; k < len(d); k++ {
 		dir, file, err := d[k].Ls(ctx)
 		if err != nil {
 			return err
 		}
 		if file == nil {
-			return err
+			return errors.New("file does not exist")
 		}
-		err = a.getFileSize(file, ctx)
+		a.wg.Add(1)
+		go func() {
+			defer a.wg.Done()
+			for _, st := range file {
+				s, er := st.Stat(ctx)
+				if file == nil {
+					err = errors.New("file does not exist")
+					return
+				}
+				if er != nil {
+					err = er
+					return
+				}
+				atomic.AddInt64(&fileCount, 1)
+				atomic.AddInt64(&sizeFile, s)
+			}
+		}()
+		//err = a.getFileSize(file, ctx)
 		if err != nil {
 			return err
 		}
 		if dir != nil {
-			err = a.walkDir(dir, ctx)
-			if err != nil {
-				return err
-			}
+			a.wg.Add(1)
+			go func() {
+				defer a.wg.Done()
+				er := a.walkDir(dir, ctx)
+				if er != nil {
+					err = er
+					return
+				}
+			}()
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil
