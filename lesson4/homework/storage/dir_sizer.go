@@ -75,11 +75,11 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	}()
 
 	*/
+
+	a.wg.Wait()
 	if err != nil {
 		return Result{}, err
 	}
-	a.wg.Wait()
-
 	return Result{Size: sizeFile, Count: fileCount}, err
 }
 
