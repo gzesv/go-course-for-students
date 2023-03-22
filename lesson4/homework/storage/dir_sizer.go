@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -11,7 +10,6 @@ import (
 
 var fileCount int64
 var sizeFile int64
-var sl []string
 
 // Result represents the Size function result
 type Result struct {
@@ -60,7 +58,6 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	go func() {
 		defer a.wg.Done()
 		for _, st := range file {
-			sl = append(sl, st.Name())
 			s, er := st.Stat(ctx)
 			if er != nil {
 				err = er
@@ -73,14 +70,13 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	/*a.wg.Add(1)
 	go func() {
 		defer a.wg.Done()
+
 		err = er
 	}()
+
 	*/
 
 	a.wg.Wait()
-	for _, o := range sl {
-		fmt.Println(o)
-	}
 	if err != nil {
 		return Result{}, err
 	}
@@ -95,7 +91,6 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 }*/
 
 func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
-
 	for k := 0; k < len(d); k++ {
 		dir, file, err := d[k].Ls(ctx)
 		if err != nil {
@@ -108,7 +103,6 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 		go func() {
 			defer a.wg.Done()
 			for _, st := range file {
-				sl = append(sl, st.Name())
 				s, er := st.Stat(ctx)
 				if file == nil {
 					err = errors.New("file does not exist")
