@@ -93,10 +93,12 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 
 func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 	var rr error
+	var dir []Dir
+	var file []File
+	var err error
 	for _, k := range d {
-		dir, file, err := k.Ls(ctx)
 		go func() {
-
+			dir, file, err = k.Ls(ctx)
 			if err != nil {
 				rr = err
 				return
