@@ -109,11 +109,11 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 			for _, st := range file {
 				s, er := st.Stat(ctx)
 				if file == nil {
-					err = errors.New("file does not exist")
+					rr = errors.New("file does not exist")
 					return
 				}
 				if er != nil {
-					err = er
+					rr = er
 					return
 				}
 				atomic.AddInt64(&fileCount, 1)
@@ -121,8 +121,7 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 			}
 			//}()
 			//err = a.getFileSize(file, ctx)
-			if err != nil {
-				rr = err
+			if rr != nil {
 				return
 			}
 			if dir != nil {
@@ -131,15 +130,15 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 				//	defer a.wg.Done()
 				er := a.walkDir(dir, ctx)
 				if er != nil {
-					err = er
+					rr = er
 					return
 				}
 				//}()
 			}
-			if err != nil {
-				rr = err
-				return
-			}
+			//if err != nil {
+			//	rr = err
+			//	return
+			//}
 			return
 		}()
 		return rr
