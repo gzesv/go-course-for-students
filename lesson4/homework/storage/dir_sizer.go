@@ -40,7 +40,6 @@ func NewSizer() DirSizer {
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	a.maxWorkersCount = 4
 	runtime.GOMAXPROCS(a.maxWorkersCount)
-
 	fileCount = 0
 	sizeFile = 0
 	dir, file, err := d.Ls(ctx)
@@ -67,6 +66,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 			atomic.AddInt64(&sizeFile, s)
 		}
 	}()
+
 	a.wg.Wait()
 	if err != nil {
 		return Result{}, err
@@ -75,17 +75,21 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 }
 
 func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
-	for k := 0; k < len(d); k++ {
-		dir, file, err := d[k].Ls(ctx)
-		if err != nil {
-			return err
-		}
-		if file == nil {
-			return errors.New("file does not exist")
-		}
+	var rr error
+	for _, k := range d {
 		a.wg.Add(1)
+		k := k
 		go func() {
 			defer a.wg.Done()
+			dir, file, err := k.Ls(ctx)
+			if err != nil {
+				rr = err
+				return
+			}
+			if file == nil {
+				rr = errors.New("file does not exist")
+				return
+			}
 			for _, st := range file {
 				s, er := st.Stat(ctx)
 				if file == nil {
@@ -99,25 +103,27 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 				atomic.AddInt64(&fileCount, 1)
 				atomic.AddInt64(&sizeFile, s)
 			}
+			//}()
+			if err != nil {
+				rr = err
+				return
+			}
+			if dir != nil {
+				a.wg.Add(1)
+				go func() {
+					defer a.wg.Done()
+					er := a.walkDir(dir, ctx)
+					if er != nil {
+						err = er
+						return
+					}
+				}()
+			}
+			if err != nil {
+				rr = err
+				return
+			}
 		}()
-		//err = a.getFileSize(file, ctx)
-		if err != nil {
-			return err
-		}
-		if dir != nil {
-			a.wg.Add(1)
-			go func() {
-				defer a.wg.Done()
-				er := a.walkDir(dir, ctx)
-				if er != nil {
-					err = er
-					return
-				}
-			}()
-		}
-		if err != nil {
-			return err
-		}
 	}
-	return nil
+	return rr
 }
