@@ -90,9 +90,6 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 				rr = errors.New("file does not exist")
 				return
 			}
-			//a.wg.Add(1)
-			//go func() {
-			//defer a.wg.Done()
 			for _, st := range file {
 				s, er := st.Stat(ctx)
 				if file == nil {
@@ -127,8 +124,6 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 				return
 			}
 		}()
-		//return rr
-
 	}
 	return rr
 }
