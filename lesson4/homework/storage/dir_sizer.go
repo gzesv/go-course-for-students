@@ -70,14 +70,11 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	/*a.wg.Add(1)
 	go func() {
 		defer a.wg.Done()
-
 		err = er
 	}()
-
 	*/
-	<-ctx.Done()
-	a.wg.Wait()
 
+	a.wg.Wait()
 	if err != nil {
 		return Result{}, err
 	}
@@ -93,12 +90,11 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 
 func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 	var rr error
-	var dir []Dir
-	var file []File
-	var err error
 	for _, k := range d {
+		a.wg.Add(1)
 		go func() {
-			dir, file, err = k.Ls(ctx)
+			defer a.wg.Done()
+			dir, file, err := k.Ls(ctx)
 			if err != nil {
 				rr = err
 				return
@@ -113,11 +109,11 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 			for _, st := range file {
 				s, er := st.Stat(ctx)
 				if file == nil {
-					rr = errors.New("file does not exist")
+					err = errors.New("file does not exist")
 					return
 				}
 				if er != nil {
-					rr = er
+					err = er
 					return
 				}
 				atomic.AddInt64(&fileCount, 1)
@@ -135,16 +131,18 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 				//	defer a.wg.Done()
 				er := a.walkDir(dir, ctx)
 				if er != nil {
-					rr = er
+					err = er
 					return
 				}
 				//}()
 			}
 			if err != nil {
 				rr = err
+				return
 			}
+			return
 		}()
-
+		return rr
 	}
-	return rr
+	return nil
 }
