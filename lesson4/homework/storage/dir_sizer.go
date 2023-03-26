@@ -61,7 +61,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 			s, er := st.Stat(ctx)
 			if er != nil {
 				err = er
-				break
+				return
 			}
 			atomic.AddInt64(&fileCount, 1)
 			atomic.AddInt64(&sizeFile, s)
