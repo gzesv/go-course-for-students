@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -43,71 +44,79 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	fileCount = 0
 	sizeFile = 0
 	dir, file, err := d.Ls(ctx)
-
 	if err != nil {
 		return Result{}, err
 	}
 	if file == nil {
+		return Result{}, errors.New("file does not exist")
+	}
+	err = a.walkDir(dir, ctx)
+	if err != nil {
 		return Result{}, err
 	}
-	var once sync.Once
-	a.wg.Add(1)
-	go func() {
-		once.Do(func() {
-			defer a.wg.Done()
-			err = a.getFileSize(file, ctx)
-		})
-	}()
-
 	a.wg.Add(1)
 	go func() {
 		defer a.wg.Done()
-		err = a.walkDir(dir, ctx)
+		for _, st := range file {
+			s, er := st.Stat(ctx)
+			if er != nil {
+				err = er
+				break
+			}
+			atomic.AddInt64(&fileCount, 1)
+			atomic.AddInt64(&sizeFile, s)
+		}
 	}()
 
 	a.wg.Wait()
-
+	if err != nil {
+		return Result{}, err
+	}
 	return Result{Size: sizeFile, Count: fileCount}, err
 }
 
-func (a *sizer) getFileSize(file []File, ctx context.Context) error {
-	defer a.wg.Done()
-	a.wg.Add(1)
-	for _, st := range file {
-		s, err := st.Stat(ctx)
-		if file == nil {
-			return err
-		}
-		if err != nil {
-			return err
-		}
-		atomic.AddInt64(&fileCount, 1)
-		atomic.AddInt64(&sizeFile, s)
-	}
-	return nil
-}
-
 func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
-	defer a.wg.Done()
-	a.wg.Add(1)
-
 	for k := 0; k < len(d); k++ {
 		dir, file, err := d[k].Ls(ctx)
 		if err != nil {
 			return err
 		}
 		if file == nil {
-			return err
+			return errors.New("file does not exist")
 		}
-		err = a.getFileSize(file, ctx)
+		a.wg.Add(1)
+		go func() {
+			defer a.wg.Done()
+			for _, st := range file {
+				s, er := st.Stat(ctx)
+				if file == nil {
+					err = errors.New("file does not exist")
+					return
+				}
+				if er != nil {
+					err = er
+					return
+				}
+				atomic.AddInt64(&fileCount, 1)
+				atomic.AddInt64(&sizeFile, s)
+			}
+		}()
 		if err != nil {
 			return err
 		}
 		if dir != nil {
-			err = a.walkDir(dir, ctx)
-			if err != nil {
-				return err
-			}
+			a.wg.Add(1)
+			go func() {
+				defer a.wg.Done()
+				er := a.walkDir(dir, ctx)
+				if er != nil {
+					err = er
+					return
+				}
+			}()
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil
