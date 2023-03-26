@@ -139,7 +139,6 @@ func (a *sizer) walkDir(d []Dir, ctx context.Context) error {
 			//	rr = err
 			//	return
 			//}
-			return
 		}()
 		return rr
 	}
