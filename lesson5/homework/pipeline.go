@@ -12,6 +12,38 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
-	// TODO
-	return nil
+	if in == nil {
+		ch := make(chan any)
+		close(ch)
+		return ch
+	}
+
+	doneStage := func(ctx context.Context, in In) Out {
+		out := make(chan any)
+		go func() {
+			defer close(out)
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case val, ok := <-in:
+					if !ok {
+						return
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case out <- val:
+					}
+				}
+			}
+		}()
+		return out
+	}
+
+	out := doneStage(ctx, in)
+	for _, stage := range stages {
+		out = stage(doneStage(ctx, out))
+	}
+	return out
 }
