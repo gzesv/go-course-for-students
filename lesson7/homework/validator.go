@@ -1,7 +1,7 @@
 package homework
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var ErrNotStruct = errors.New("wrong argument given, should be a struct")
