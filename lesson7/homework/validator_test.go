@@ -18,6 +18,60 @@ func TestValidate(t *testing.T) {
 		checkErr func(err error) bool
 	}{
 		{
+			name: "valid slice",
+			args: args{
+				v: struct {
+					Len  []int    `validate:"len:3"`
+					LenS []string `validate:"len:2"`
+					MaxI []int    `validate:"max:3"`
+					MaxS []string `validate:"max:5"`
+					MinI []int    `validate:"min:1"`
+					MinS []string `validate:"min:1"`
+					InI  []int    `validate:"in:10,25,30"`
+					InS  []string `validate:"in:foo,bar"`
+				}{
+					Len:  []int{122, 222, 333},
+					LenS: []string{"11", "22"},
+					MaxI: []int{1, 2, 3},
+					MaxS: []string{"1", "2", "5"},
+					MinI: []int{1, 2, 1},
+					MinS: []string{"1", "2", "7"},
+					InI:  []int{10, 25, 30},
+					InS:  []string{"foo", "foo", "bar"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid slice",
+			args: args{
+				v: struct {
+					Len  []int    `validate:"len:3"`
+					LenS []string `validate:"len:2"`
+					MaxI []int    `validate:"max:1"`
+					MaxS []string `validate:"max:1"`
+					MinI []int    `validate:"min:2"`
+					MinS []string `validate:"min:7"`
+					InI  []int    `validate:"in:10,25,30"`
+					InS  []string `validate:"in:foo,bar"`
+				}{
+					Len:  []int{11, 22},
+					LenS: []string{"1", "2"},
+					MaxI: []int{1, 2, 3},
+					MaxS: []string{"1", "2", "5"},
+					MinI: []int{1, 2, 1},
+					MinS: []string{"1", "2", "7"},
+					InI:  []int{10, 178, -7},
+					InS:  []string{"ooo", "bar", "aaa"},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 8)
+				return true
+			},
+		},
+		{
 			name: "invalid struct: interface",
 			args: args{
 				v: new(any),
