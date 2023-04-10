@@ -11,12 +11,152 @@ func TestValidate(t *testing.T) {
 	type args struct {
 		v any
 	}
+	type TestStruct struct {
+		LenS      []string `validate:"len:2"`
+		MaxI      []int    `validate:"max:3"`
+		MaxS      []string `validate:"max:5"`
+		MinI      []int    `validate:"min:2"`
+		MinS      []string `validate:"min:2"`
+		InI       []int    `validate:"in:10,25,30"`
+		InS       []string `validate:"in:foo,bar"`
+		Len       string   `validate:"len:20"`
+		LenZ      string   `validate:"len:0"`
+		InInt     int      `validate:"in:20,25,30"`
+		InNeg     int      `validate:"in:-20,-25,-30"`
+		InStr     string   `validate:"in:foo,bar"`
+		MinInt    int      `validate:"min:10"`
+		MinIntNeg int      `validate:"min:-10"`
+		MinStr    string   `validate:"min:10"`
+		MaxInt    int      `validate:"max:20"`
+		MaxIntNeg int      `validate:"max:-2"`
+		MaxStr    string   `validate:"max:20"`
+	}
 	tests := []struct {
 		name     string
 		args     args
 		wantErr  bool
 		checkErr func(err error) bool
 	}{
+		{
+			name: "valid nested struct",
+			args: args{
+				v: struct {
+					TestStruct TestStruct
+					Lower      string `validate:"len:2"`
+					Higher     string `validate:"len:5"`
+					Zero       string `validate:"len:0"`
+				}{
+					TestStruct: TestStruct{
+						LenS:      []string{"11", "22"},
+						MaxI:      []int{1, 2, 3},
+						MaxS:      []string{"1", "2", "5"},
+						MinI:      []int{11, 22, 11},
+						MinS:      []string{"11", "22", "77"},
+						InI:       []int{10, 25, 30},
+						InS:       []string{"foo", "foo", "bar"},
+						Len:       "abcdefghjklmopqrstvu",
+						LenZ:      "",
+						InInt:     25,
+						InNeg:     -25,
+						InStr:     "bar",
+						MinInt:    15,
+						MinIntNeg: -9,
+						MinStr:    "abcdefghjkl",
+						MaxInt:    16,
+						MaxIntNeg: -3,
+						MaxStr:    "abcdefghjklmopqrst",
+					},
+					Lower:  "ab",
+					Higher: "abcde",
+					Zero:   "",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid nested struct",
+			args: args{
+				v: struct {
+					TestStruct TestStruct
+				}{
+					TestStruct: TestStruct{
+						LenS:      []string{"1", "2"},
+						MaxI:      []int{1, 2, 7},
+						MaxS:      []string{"111111", "2", "5"},
+						MinI:      []int{1, 2, 1},
+						MinS:      []string{"1", "2", "7"},
+						InI:       []int{10, 178, -7},
+						InS:       []string{"ooo", "bar", "aaa"},
+						Len:       "abcdefghjklmopqrstvuwxyz",
+						LenZ:      "1",
+						InInt:     1000,
+						InNeg:     -2500,
+						InStr:     "str",
+						MinInt:    9,
+						MinIntNeg: -90,
+						MinStr:    "ab",
+						MaxInt:    160,
+						MaxIntNeg: -1,
+						MaxStr:    "abcdefghjklmopqrstvuwxyz",
+					},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 18)
+				return true
+			},
+		},
+		{
+			name: "valid slice",
+			args: args{
+				v: struct {
+					LenS []string `validate:"len:2"`
+					MaxI []int    `validate:"max:3"`
+					MaxS []string `validate:"max:5"`
+					MinI []int    `validate:"min:1"`
+					MinS []string `validate:"min:1"`
+					InI  []int    `validate:"in:10,25,30"`
+					InS  []string `validate:"in:foo,bar"`
+				}{
+					LenS: []string{"11", "22"},
+					MaxI: []int{1, 2, 3},
+					MaxS: []string{"1", "2", "5"},
+					MinI: []int{1, 2, 1},
+					MinS: []string{"1", "2", "7"},
+					InI:  []int{10, 25, 30},
+					InS:  []string{"foo", "foo", "bar"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid slice",
+			args: args{
+				v: struct {
+					LenS []string `validate:"len:2"`
+					MaxI []int    `validate:"max:1"`
+					MaxS []string `validate:"max:1"`
+					MinI []int    `validate:"min:2"`
+					MinS []string `validate:"min:7"`
+					InI  []int    `validate:"in:10,25,30"`
+					InS  []string `validate:"in:foo,bar"`
+				}{
+					LenS: []string{"1", "2"},
+					MaxI: []int{1, 2, 3},
+					MaxS: []string{"11", "2", "5"},
+					MinI: []int{1, 2, 1},
+					MinS: []string{"1", "2", "7"},
+					InI:  []int{10, 178, -7},
+					InS:  []string{"ooo", "bar", "aaa"},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 7)
+				return true
+			},
+		},
 		{
 			name: "invalid struct: interface",
 			args: args{
