@@ -34,7 +34,7 @@ func Validate(v any) error {
 
 	switch value.Kind() {
 	case reflect.Struct:
-		vErrors = validateStruct(value, vErrors)
+		vErrors = validateStruct(value)
 	default:
 		return ErrNotStruct
 	}
@@ -46,7 +46,9 @@ func Validate(v any) error {
 	return vErrors
 }
 
-func validateStruct(value reflect.Value, vErrors ValidationErrors) ValidationErrors {
+func validateStruct(value reflect.Value) ValidationErrors {
+	var vErrors ValidationErrors
+
 	if value.Kind() != reflect.Struct {
 		vErrors = append(vErrors, appendError("", ErrNotStruct))
 		return vErrors
@@ -56,7 +58,7 @@ func validateStruct(value reflect.Value, vErrors ValidationErrors) ValidationErr
 		valueField := value.Field(i)
 
 		if valueField.Kind() == reflect.Struct {
-			vErrors = validateStruct(valueField, vErrors)
+			vErrors = validateStruct(valueField)
 		}
 
 		valueTypeField := value.Type().Field(i)
@@ -74,16 +76,16 @@ func validateStruct(value reflect.Value, vErrors ValidationErrors) ValidationErr
 		switch valueField.Kind() {
 		case reflect.Slice:
 			for j := 0; j < valueField.Len(); j++ {
-				ok := validateValue(valueTypeField, valueField.Index(j))
-				if !ok {
-					vErrors = append(vErrors, appendError(valueTypeField.Name, ErrInvalidValidatorSyntax))
+				err := validateValue(valueTypeField, valueField.Index(j))
+				if err != nil {
+					vErrors = append(vErrors, appendError(valueTypeField.Name, err))
 					break
 				}
 			}
 		default:
-			ok := validateValue(valueTypeField, valueField)
-			if !ok {
-				vErrors = append(vErrors, appendError(valueTypeField.Name, ErrInvalidValidatorSyntax))
+			err := validateValue(valueTypeField, valueField)
+			if err != nil {
+				vErrors = append(vErrors, appendError(valueTypeField.Name, err))
 			}
 		}
 
@@ -91,7 +93,7 @@ func validateStruct(value reflect.Value, vErrors ValidationErrors) ValidationErr
 	return vErrors
 }
 
-func validateValue(valueTypeField reflect.StructField, value reflect.Value) bool {
+func validateValue(valueTypeField reflect.StructField, value reflect.Value) error {
 	tag := valueTypeField.Tag.Get("validate")
 	rulesArr := strings.SplitN(tag, ":", 2)
 	rName := rulesArr[0]
@@ -103,73 +105,88 @@ func validateValue(valueTypeField reflect.StructField, value reflect.Value) bool
 		case reflect.String:
 			rVal, err := strconv.ParseInt(rVal, 10, 64)
 			if err != nil {
-				return false
+				return ErrInvalidValidatorSyntax
 			}
-			return int64(len([]rune(value.String()))) == rVal
+			if int64(len([]rune(value.String()))) == rVal {
+				return nil
+			}
+			return errors.New("invalid string length")
 		}
-		return false
+		return errors.New("invalid type of field")
 	case "max":
 		switch value.Kind() {
 		case reflect.String:
 			rVal, err := strconv.ParseInt(rVal, 10, 64)
 			if err != nil {
-				return false
+				return ErrInvalidValidatorSyntax
 			}
-			return int64(len([]rune(value.String()))) <= rVal
+			if int64(len([]rune(value.String()))) <= rVal {
+				return nil
+			}
+			return errors.New("string len greater max")
 		case reflect.Int:
 			rVal, err := strconv.ParseInt(rVal, 10, 64)
 			if err != nil {
-				return false
+				return ErrInvalidValidatorSyntax
 			}
-			return value.Int() <= rVal
+			if value.Int() <= rVal {
+				return nil
+			}
+			return errors.New("int value greater max")
 		}
-		return false
+		return errors.New("invalid type of field")
 	case "min":
 		switch value.Kind() {
 		case reflect.String:
 			rVal, err := strconv.ParseInt(rVal, 10, 64)
 			if err != nil {
-				return false
+				return ErrInvalidValidatorSyntax
 			}
-			return int64(len([]rune(value.String()))) >= rVal
+			if int64(len([]rune(value.String()))) >= rVal {
+				return nil
+			}
+			return errors.New("string length less min")
 		case reflect.Int:
 			rVal, err := strconv.ParseInt(rVal, 10, 64)
 			if err != nil {
-				return false
+				return ErrInvalidValidatorSyntax
 			}
-			return value.Int() >= rVal
+			if value.Int() >= rVal {
+				return nil
+			}
+			return errors.New("int value less min")
 		}
-		return false
+		return errors.New("invalid type of field")
 	case "in":
 		switch value.Kind() {
 		case reflect.String:
 			if rVal == "" {
-				return false
+				return ErrInvalidValidatorSyntax
 			}
 			for _, s := range strings.Split(rVal, ",") {
 				if s == value.String() {
-					return true
+					return nil
 				}
 			}
-			return false
+			return errors.New("string value in not list")
 		case reflect.Int:
 			if rVal == "" {
-				return false
+				return ErrInvalidValidatorSyntax
 			}
 			for _, s := range strings.Split(rVal, ",") {
 				s, err := strconv.ParseInt(s, 10, 64)
 				if err != nil {
-					return false
+					return ErrInvalidValidatorSyntax
 				}
 				if s == value.Int() {
-					return true
+					return nil
 				}
 			}
-			return false
+			return errors.New("int value in not list")
 		}
-		return false
+		return errors.New("invalid type of field")
 	}
-	return false
+	return ErrInvalidValidatorSyntax
 }
 
 func appendError(name string, err error) ValidationError {
