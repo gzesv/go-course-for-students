@@ -18,14 +18,26 @@ func createAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		//TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		ad, er := a.CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
+		if er != nil {
+			switch er {
+			case app.ErrValidate:
+				c.Status(http.StatusBadRequest)
+			default:
+				c.Status(http.StatusInternalServerError)
+			}
+			return c.JSON(AdErrorResponse(er))
+		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return c.JSON(AdErrorResponse(err))
+		}
+		return c.JSON(AdSuccessResponse(&ad))
 	}
 }
 
@@ -44,15 +56,25 @@ func changeAdStatus(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		ad, er := a.ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
+		if er != nil {
+			switch er {
+			case app.ErrValidate:
+				c.Status(http.StatusBadRequest)
+			case app.ErrAccessDenied:
+				c.Status(http.StatusForbidden)
+			default:
+				c.Status(http.StatusInternalServerError)
+			}
+			return c.JSON(AdErrorResponse(er))
+		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(&ad))
 	}
 }
 
@@ -71,14 +93,24 @@ func updateAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики, например, UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		ad, er := a.UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
+		if er != nil {
+			switch er {
+			case app.ErrValidate:
+				c.Status(http.StatusBadRequest)
+			case app.ErrAccessDenied:
+				c.Status(http.StatusForbidden)
+			default:
+				c.Status(http.StatusInternalServerError)
+			}
+			return c.JSON(AdErrorResponse(er))
+		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(&ad))
 	}
 }
