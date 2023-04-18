@@ -163,7 +163,7 @@ func (s StApp) GetAllAdsByFilter(ctx context.Context, filter Filter) ([]ads.Ad, 
 }
 
 func CheckAd(ad ads.Ad, filter Filter) bool {
-	if ad.Published != true {
+	if !ad.Published {
 		return false
 	}
 	return true
