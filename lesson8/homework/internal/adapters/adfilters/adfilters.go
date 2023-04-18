@@ -9,32 +9,32 @@ import (
 )
 
 func New() app.Filter {
-	return &BasicFilter{mx: &sync.RWMutex{}}
+	return &StFilter{mx: &sync.RWMutex{}}
 }
 
-type BasicFilter struct {
+type StFilter struct {
 	mx           *sync.RWMutex
 	Published    bool
 	AuthorID     int64
 	CreationDate time.Time
 }
 
-func (d *BasicFilter) DefaultFilter(ctx context.Context) (app.Filter, error) {
-	d.mx.RLock()
-	defer d.mx.RUnlock()
-	d.Published = true
-	return d, nil
+func (f *StFilter) DefaultFilter(ctx context.Context) (app.Filter, error) {
+	f.mx.Lock()
+	defer f.mx.Unlock()
+	f.Published = true
+	return f, nil
 }
 
-func (d *BasicFilter) GetFilter(ctx context.Context) (app.Filter, error) {
-	d.mx.RLock()
-	defer d.mx.RUnlock()
-	return d, nil
+func (f *StFilter) GetFilter(ctx context.Context) (app.Filter, error) {
+	f.mx.Lock()
+	defer f.mx.Unlock()
+	return f, nil
 }
 
-func (d *BasicFilter) FilterByAuthor(ctx context.Context, userID int64) (app.Filter, error) {
-	d.mx.RLock()
-	defer d.mx.RUnlock()
-	d.AuthorID = userID
-	return d, nil
+func (f *StFilter) FilterByAuthor(ctx context.Context, userID int64) (app.Filter, error) {
+	f.mx.Lock()
+	defer f.mx.Unlock()
+	f.AuthorID = userID
+	return f, nil
 }
