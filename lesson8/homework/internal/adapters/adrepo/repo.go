@@ -23,8 +23,8 @@ func New() app.Repository {
 }
 
 func (r *Repo) Find(ctx context.Context, adID int64) (ads.Ad, bool) {
-	r.mx.RLock()
-	defer r.mx.RUnlock()
+	r.mx.Lock()
+	defer r.mx.Unlock()
 	_, ok := r.mp[adID]
 	if !ok {
 		return ads.Ad{}, false
@@ -33,8 +33,8 @@ func (r *Repo) Find(ctx context.Context, adID int64) (ads.Ad, bool) {
 }
 
 func (r *Repo) Add(ctx context.Context, title string, text string, userID int64) ads.Ad {
-	r.mx.RLock()
-	defer r.mx.RUnlock()
+	r.mx.Lock()
+	defer r.mx.Unlock()
 	for {
 		if _, ok := r.mp[r.ID]; !ok {
 			break
@@ -54,8 +54,8 @@ func (r *Repo) Add(ctx context.Context, title string, text string, userID int64)
 }
 
 func (r *Repo) ChangeTitle(ctx context.Context, adID int64, title string) ads.Ad {
-	r.mx.RLock()
-	defer r.mx.RUnlock()
+	r.mx.Lock()
+	defer r.mx.Unlock()
 	ad := r.mp[adID]
 	ad.Title = title
 	ad.UpdateDate = time.Now().UTC()
@@ -65,8 +65,8 @@ func (r *Repo) ChangeTitle(ctx context.Context, adID int64, title string) ads.Ad
 }
 
 func (r *Repo) ChangeText(ctx context.Context, adID int64, text string) ads.Ad {
-	r.mx.RLock()
-	defer r.mx.RUnlock()
+	r.mx.Lock()
+	defer r.mx.Unlock()
 	ad := r.mp[adID]
 	ad.Text = text
 	ad.UpdateDate = time.Now().UTC()
@@ -75,8 +75,8 @@ func (r *Repo) ChangeText(ctx context.Context, adID int64, text string) ads.Ad {
 }
 
 func (r *Repo) ChangeStatus(ctx context.Context, adID int64, status bool) ads.Ad {
-	r.mx.RLock()
-	defer r.mx.RUnlock()
+	r.mx.Lock()
+	defer r.mx.Unlock()
 	ad := r.mp[adID]
 	ad.Published = status
 	ad.UpdateDate = time.Now().UTC()
@@ -85,8 +85,8 @@ func (r *Repo) ChangeStatus(ctx context.Context, adID int64, status bool) ads.Ad
 }
 
 func (r *Repo) GetAdsByFilter(ctx context.Context, filter app.Filter) ([]ads.Ad, error) {
-	r.mx.RLock()
-	defer r.mx.RUnlock()
+	r.mx.Lock()
+	defer r.mx.Unlock()
 	adss := []ads.Ad{}
 	for _, ad := range r.mp {
 		if app.CheckAd(ad, filter) {
@@ -97,8 +97,8 @@ func (r *Repo) GetAdsByFilter(ctx context.Context, filter app.Filter) ([]ads.Ad,
 }
 
 func (r *Repo) GetByTitle(ctx context.Context, title string) []ads.Ad {
-	r.mx.RLock()
-	defer r.mx.RUnlock()
+	r.mx.Lock()
+	defer r.mx.Unlock()
 	adss := []ads.Ad{}
 	for _, ad := range r.mp {
 		if ad.Title == title {
