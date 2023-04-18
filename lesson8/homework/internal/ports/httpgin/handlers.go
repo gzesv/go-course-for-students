@@ -189,7 +189,8 @@ func listAds(a app.App) gin.HandlerFunc {
 func changeUserInfo(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody changeUserStatusRequest
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
+		err := c.ShouldBindJSON(&reqBody)
+		if err != nil {
 			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
 			return
 		}
@@ -228,7 +229,6 @@ func changeUserInfo(a app.App) gin.HandlerFunc {
 
 func getAdsByTitle(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		title := c.Query("title")
 		ads, err := a.GetAdsByTitle(c, title)
 		if err != nil {

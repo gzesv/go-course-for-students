@@ -22,8 +22,8 @@ func New() app.Users {
 }
 
 func (u *UserRepo) Find(ctx context.Context, userID int64) (int64, bool) {
-	u.mx.RLock()
-	defer u.mx.RUnlock()
+	u.mx.Lock()
+	defer u.mx.Unlock()
 	if _, ok := u.mp[userID]; !ok {
 		return -1, false
 	}
@@ -31,8 +31,8 @@ func (u *UserRepo) Find(ctx context.Context, userID int64) (int64, bool) {
 }
 
 func (u *UserRepo) ChangeInfo(ctx context.Context, userID int64, nickname, email string) user.User {
-	u.mx.RLock()
-	defer u.mx.RUnlock()
+	u.mx.Lock()
+	defer u.mx.Unlock()
 	us := u.mp[userID]
 	us.Nickname = nickname
 	us.Email = email
@@ -41,8 +41,8 @@ func (u *UserRepo) ChangeInfo(ctx context.Context, userID int64, nickname, email
 }
 
 func (u *UserRepo) Create(ctx context.Context, nickname string, email string, userID int64) user.User {
-	u.mx.RLock()
-	defer u.mx.RUnlock()
+	u.mx.Lock()
+	defer u.mx.Unlock()
 	u.mp[userID] = user.User{
 		ID:       userID,
 		Nickname: nickname,
