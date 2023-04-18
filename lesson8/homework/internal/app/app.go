@@ -163,10 +163,7 @@ func (s StApp) GetAllAdsByFilter(ctx context.Context, filter Filter) ([]ads.Ad, 
 }
 
 func CheckAd(ad ads.Ad, filter Filter) bool {
-	if !ad.Published {
-		return false
-	}
-	return true
+	return !ad.Published
 }
 
 func (s StApp) FindUser(ctx context.Context, userID int64) (int64, bool) {
