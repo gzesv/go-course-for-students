@@ -77,9 +77,6 @@ func (s StApp) CreateAd(ctx context.Context, title string, text string, userID i
 		return ads.Ad{}, ErrWrongFormat
 	}
 
-	if err != nil {
-		return ads.Ad{}, ErrWrongFormat
-	}
 	ad = s.repository.Add(ctx, title, text, userID)
 	return ad, nil
 }
