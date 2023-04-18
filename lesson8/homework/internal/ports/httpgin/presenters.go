@@ -74,9 +74,9 @@ func UserSuccessResponse(u *user.User) *gin.H {
 }
 
 func AdSuccessResponseList(ads *[]ads.Ad) *gin.H {
-	res := []adResponse{}
+	adss := []adResponse{}
 	for _, ad := range *ads {
-		res = append(res, adResponse{
+		adss = append(adss, adResponse{
 			ID:           ad.ID,
 			Title:        ad.Title,
 			Text:         ad.Text,
@@ -87,7 +87,7 @@ func AdSuccessResponseList(ads *[]ads.Ad) *gin.H {
 		})
 	}
 	return &gin.H{
-		"data":  res,
+		"data":  adss,
 		"error": nil,
 	}
 }
