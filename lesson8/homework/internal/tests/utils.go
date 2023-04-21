@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
-
 	"homework8/internal/adapters/adfilters"
 	"homework8/internal/adapters/adrepo"
 	"homework8/internal/adapters/userrepo"
 	"homework8/internal/app"
 	"homework8/internal/ports/httpgin"
+	"io"
+	"net/http"
+	"net/http/httptest"
 )
 
 type adData struct {
@@ -245,6 +244,21 @@ func (tc *testClient) changeUserInfo(userID int64, nickname, email string) (user
 
 func (tc *testClient) getAdsByTitle(title string) (adsResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/ads/by_title?title=%s", title), nil)
+	if err != nil {
+		return adsResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	var response adsResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return adsResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) listAdsAuthor(authorId int64) (adsResponse, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/ads?author_id=%d", authorId), nil)
 	if err != nil {
 		return adsResponse{}, fmt.Errorf("unable to create request: %w", err)
 	}
