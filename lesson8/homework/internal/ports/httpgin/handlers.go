@@ -146,12 +146,7 @@ func createUser(a app.App) gin.HandlerFunc {
 
 func listAds(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		f, err := a.NewFilter(c)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
-			return
-		}
-		filter, err := f.DefaultFilter(c)
+		filter, err := a.NewFilter(c)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
 			return
@@ -170,7 +165,7 @@ func listAds(a app.App) gin.HandlerFunc {
 			}
 		}
 
-		f, err = filter.GetFilter(c)
+		f, err := filter.GetFilter(c)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
 			return
