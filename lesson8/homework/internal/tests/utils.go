@@ -257,6 +257,7 @@ func (tc *testClient) getAdsByTitle(title string) (adsResponse, error) {
 	return response, nil
 }
 
+/*
 func (tc *testClient) listAdsAuthor(authorId int64) (adsResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/ads?author_id=%d", authorId), nil)
 	if err != nil {
@@ -271,3 +272,4 @@ func (tc *testClient) listAdsAuthor(authorId int64) (adsResponse, error) {
 
 	return response, nil
 }
+*/
