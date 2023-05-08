@@ -19,7 +19,7 @@ func TestChangeStatusAdOfAnotherUser(t *testing.T) {
 
 func TestUpdateAdOfAnotherUser(t *testing.T) {
 	client := getTestClient()
-	_, err := client.createUser(123, "user", "somemail@mail.com")
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	resp, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 	_, err = client.createUser(100, "user1", "somemail@mail.com")
@@ -30,7 +30,7 @@ func TestUpdateAdOfAnotherUser(t *testing.T) {
 
 func TestCreateAd_ID(t *testing.T) {
 	client := getTestClient()
-	_, err := client.createUser(123, "user", "somemail@mail.com")
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	resp, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Data.ID, int64(0))
