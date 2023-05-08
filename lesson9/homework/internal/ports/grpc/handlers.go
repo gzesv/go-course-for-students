@@ -100,7 +100,7 @@ func (s AdService) ListAds(ctx context.Context, req *FilterRequest) (*ListAdResp
 		return &ListAdResponse{}, status.Error(codes.Internal, err.Error())
 	}
 
-	adf, err := f.GetFilter(ctx)
+	adf, _ := f.GetFilter(ctx)
 	ads, err := s.a.GetAllAdsByFilter(ctx, adf)
 	if err != nil {
 		return &ListAdResponse{}, status.Error(codes.Internal, err.Error())
@@ -118,21 +118,6 @@ func (s AdService) ListAds(ctx context.Context, req *FilterRequest) (*ListAdResp
 	return &res, nil
 }
 
-/*
-	func (s AdService) GetAdByID(ctx context.Context, req *GetAdRequest) (*AdResponse, error) {
-		ad, isFound := s.a.FindAd(ctx, req.Id)
-		if !isFound  {
-			return &AdResponse{}, status.Error(codes.Internal, app.ErrWrongFormat.Error())
-		}
-		return &AdResponse{Id: ad.ID,
-			Title:        ad.Title,
-			Text:         ad.Text,
-			AuthorId:     ad.AuthorID,
-			Published:    ad.Published,
-			CreationDate: timestamppb.New(ad.CreationDate),
-			UpdateDate:   timestamppb.New(ad.CreationDate)}, nil
-	}
-*/
 func (s AdService) CreateUser(ctx context.Context, req *UniversalUser) (*UniversalUser, error) {
 	u, err := s.a.CreateUser(ctx, req.Nickname, req.Email, req.UserId)
 	if err != nil {
