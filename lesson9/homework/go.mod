@@ -4,7 +4,9 @@ go 1.19
 
 require (
 	github.com/gin-gonic/gin v1.9.0
+	github.com/gzesv/validatorn v1.2.3
 	github.com/stretchr/testify v1.8.2
+	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.54.0
 )
 
