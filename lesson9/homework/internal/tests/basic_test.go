@@ -63,8 +63,8 @@ func TestListAds(t *testing.T) {
 	_, err = client.createAd(123, "title", "text")
 	assert.NoError(t, err)
 
-	ads, err := client.listAds()
-	assert.NoError(t, err)
+	ads, er := client.listAds()
+	assert.NoError(t, er)
 	assert.Len(t, ads.Data, 1)
 	assert.Equal(t, ads.Data[0].ID, publishedAd.Data.ID)
 	assert.Equal(t, ads.Data[0].Title, publishedAd.Data.Title)

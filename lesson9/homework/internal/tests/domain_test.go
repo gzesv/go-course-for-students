@@ -12,7 +12,7 @@ func TestChangeStatusAdOfAnotherUser(t *testing.T) {
 	assert.NoError(t, err)
 	resp, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
-	_, err = client.createUser(100, "user1", "somemail@mail.com")
+	_, _ = client.createUser(100, "user1", "somemail@mail.com")
 	_, err = client.changeAdStatus(100, resp.Data.ID, true)
 	assert.ErrorIs(t, err, ErrForbidden)
 }
@@ -22,7 +22,7 @@ func TestUpdateAdOfAnotherUser(t *testing.T) {
 	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	resp, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
-	_, err = client.createUser(100, "user1", "somemail@mail.com")
+	_, _ = client.createUser(100, "user1", "somemail@mail.com")
 	_, err = client.updateAd(100, resp.Data.ID, "title", "text")
 
 	assert.ErrorIs(t, err, ErrForbidden)
