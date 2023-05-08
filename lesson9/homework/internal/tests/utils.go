@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"homework9/internal/adapters/adfilters"
+	"homework9/internal/adapters/userrepo"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -21,8 +23,18 @@ type adData struct {
 	Published bool   `json:"published"`
 }
 
+type userData struct {
+	Nickname string `json:"nickname" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	ID       int64  `json:"user_id" binding:"required"`
+}
+
 type adResponse struct {
 	Data adData `json:"data"`
+}
+
+type userResponse struct {
+	Data userData `json:"data"`
 }
 
 type adsResponse struct {
@@ -40,7 +52,7 @@ type testClient struct {
 }
 
 func getTestClient() *testClient {
-	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New()))
+	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New(), userrepo.New(), adfilters.New()))
 	testServer := httptest.NewServer(server.Handler)
 
 	return &testClient{
@@ -171,6 +183,60 @@ func (tc *testClient) listAds() (adsResponse, error) {
 	err = tc.getResponse(req, &response)
 	if err != nil {
 		return adsResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) createUser(id int64, nickname, email string) (userResponse, error) {
+	body := map[string]any{
+		"nickname": nickname,
+		"email":    email,
+		"user_id":  id,
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, tc.baseURL+"/api/v1/users", bytes.NewReader(data))
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (tc *testClient) deleteAd(userID, adID int64) (adResponse, error) {
+	body := map[string]any{
+		"user_id": userID,
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return adResponse{}, fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf(tc.baseURL+"/api/v1/ads/%d", adID), bytes.NewReader(data))
+	if err != nil {
+		return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response adResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return adResponse{}, err
 	}
 
 	return response, nil
