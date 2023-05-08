@@ -1,7 +1,6 @@
 package httpgin
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -226,11 +225,13 @@ func deleteUser(a app.App) gin.HandlerFunc {
 
 		u, err := a.DeleteUser(c, int64(userID))
 		if err != nil {
-			if errors.Is(err, app.ErrWrongFormat) {
+			switch err {
+			case app.ErrWrongFormat:
 				c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-				return
+
+			default:
+				c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
 			}
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
 			return
 		}
 
