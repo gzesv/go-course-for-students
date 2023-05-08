@@ -8,7 +8,7 @@ import (
 
 func TestCreateAd(t *testing.T) {
 	client := getTestClient()
-	_, err := client.createUser(123, "nickname", "example@mail.com")
+	_, _ = client.createUser(123, "nickname", "example@mail.com")
 
 	response, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
@@ -21,7 +21,7 @@ func TestCreateAd(t *testing.T) {
 
 func TestChangeAdStatus(t *testing.T) {
 	client := getTestClient()
-	_, err := client.createUser(123, "user", "somemail@mail.com")
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	response, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 
@@ -40,7 +40,7 @@ func TestChangeAdStatus(t *testing.T) {
 
 func TestUpdateAd(t *testing.T) {
 	client := getTestClient()
-	_, err := client.createUser(123, "user", "somemail@mail.com")
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	response, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 
@@ -53,14 +53,14 @@ func TestUpdateAd(t *testing.T) {
 
 func TestListAds(t *testing.T) {
 	client := getTestClient()
-	_, err := client.createUser(123, "user", "somemail@mail.com")
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	response, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 
 	publishedAd, err := client.changeAdStatus(123, response.Data.ID, true)
 	assert.NoError(t, err)
 
-	_, err = client.createAd(123, "best cat", "not for sale")
+	_, err = client.createAd(123, "title", "text")
 	assert.NoError(t, err)
 
 	ads, err := client.listAds()
@@ -71,4 +71,15 @@ func TestListAds(t *testing.T) {
 	assert.Equal(t, ads.Data[0].Text, publishedAd.Data.Text)
 	assert.Equal(t, ads.Data[0].AuthorID, publishedAd.Data.AuthorID)
 	assert.True(t, ads.Data[0].Published)
+}
+
+func TestDeleteAd(t *testing.T) {
+	client := getTestClient()
+
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
+	a, _ := client.createAd(123, "title", "text")
+
+	response, _ := client.deleteAd(a.Data.AuthorID, a.Data.ID)
+	_, err := client.changeAdStatus(123, response.Data.ID, true)
+	assert.ErrorIs(t, err, ErrBadRequest)
 }
