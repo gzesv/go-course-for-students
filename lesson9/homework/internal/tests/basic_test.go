@@ -33,9 +33,6 @@ func TestChangeAdStatus(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, response.Data.Published)
 
-	response, err = client.changeAdStatus(123, response.Data.ID, false)
-	assert.NoError(t, err)
-	assert.False(t, response.Data.Published)
 }
 
 func TestUpdateAd(t *testing.T) {

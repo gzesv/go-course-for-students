@@ -39,13 +39,12 @@ func GetTestClient(t *testing.T) (grpcPort.AdServiceClient, context.Context) {
 		return lis.Dial()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	t.Cleanup(func() {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer),
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {
@@ -88,8 +87,7 @@ func TestGRPCChangeAdStatus(t *testing.T) {
 
 	ad, _ := client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "title", Text: "text", UserId: a.UserId})
 
-	updatedAd, err := client.ChangeAdStatus(ctx, &grpcPort.ChangeAdStatusRequest{
-		AdId: ad.Id, UserId: ad.AuthorId, Published: true})
+	updatedAd, err := client.ChangeAdStatus(ctx, &grpcPort.ChangeAdStatusRequest{AdId: ad.Id, UserId: ad.AuthorId, Published: true})
 	assert.NoError(t, err)
 	assert.Equal(t, ad.Title, updatedAd.Title)
 	assert.Equal(t, ad.Text, updatedAd.Text)
@@ -104,8 +102,7 @@ func TestGRPCUpdateAd(t *testing.T) {
 
 	ad, _ := client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "title", Text: "text", UserId: a.UserId})
 
-	updatedAd, err := client.UpdateAd(ctx, &grpcPort.UpdateAdRequest{
-		AdId: ad.Id, Title: "title1", Text: "text1", UserId: ad.AuthorId})
+	updatedAd, err := client.UpdateAd(ctx, &grpcPort.UpdateAdRequest{AdId: ad.Id, Title: "title1", Text: "text1", UserId: ad.AuthorId})
 	assert.NoError(t, err)
 	assert.Equal(t, "title1", updatedAd.Title)
 	assert.Equal(t, "text1", updatedAd.Text)
@@ -118,10 +115,9 @@ func TestGRPCDeleteAd(t *testing.T) {
 
 	a, _ := client.CreateUser(ctx, &grpcPort.UniversalUser{Nickname: "name", Email: "somemail@mail.com", UserId: 123})
 
-	ad, _ := client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "aba", Text: "caba", UserId: a.UserId})
+	ad, _ := client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "title", Text: "text", UserId: a.UserId})
 
-	resp, err := client.DeleteAd(ctx, &grpcPort.DeleteAdRequest{
-		AdId: ad.Id, AuthorId: ad.AuthorId})
+	resp, err := client.DeleteAd(ctx, &grpcPort.DeleteAdRequest{AdId: ad.Id, AuthorId: ad.AuthorId})
 	assert.NoError(t, err)
 	assert.Equal(t, ad.Title, resp.Title)
 	assert.Equal(t, ad.Text, resp.Text)
