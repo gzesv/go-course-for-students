@@ -9,7 +9,7 @@ import (
 
 func TestCreateAd_EmptyTitle(t *testing.T) {
 	client := getTestClient()
-
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	_, err := client.createAd(123, "", "world")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
@@ -18,14 +18,14 @@ func TestCreateAd_TooLongTitle(t *testing.T) {
 	client := getTestClient()
 
 	title := strings.Repeat("a", 101)
-
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	_, err := client.createAd(123, title, "world")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
 func TestCreateAd_EmptyText(t *testing.T) {
 	client := getTestClient()
-
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	_, err := client.createAd(123, "title", "")
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
@@ -34,14 +34,14 @@ func TestCreateAd_TooLongText(t *testing.T) {
 	client := getTestClient()
 
 	text := strings.Repeat("a", 501)
-
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	_, err := client.createAd(123, "title", text)
 	assert.ErrorIs(t, err, ErrBadRequest)
 }
 
 func TestUpdateAd_EmptyTitle(t *testing.T) {
 	client := getTestClient()
-
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	resp, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 
@@ -51,7 +51,7 @@ func TestUpdateAd_EmptyTitle(t *testing.T) {
 
 func TestUpdateAd_TooLongTitle(t *testing.T) {
 	client := getTestClient()
-
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	resp, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 
@@ -63,7 +63,7 @@ func TestUpdateAd_TooLongTitle(t *testing.T) {
 
 func TestUpdateAd_EmptyText(t *testing.T) {
 	client := getTestClient()
-
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	resp, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 
@@ -75,7 +75,7 @@ func TestUpdateAd_TooLongText(t *testing.T) {
 	client := getTestClient()
 
 	text := strings.Repeat("a", 501)
-
+	_, _ = client.createUser(123, "user", "somemail@mail.com")
 	resp, err := client.createAd(123, "hello", "world")
 	assert.NoError(t, err)
 
