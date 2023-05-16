@@ -20,7 +20,6 @@ type App interface {
 	CreateUser(ctx context.Context, nickname, email string, userID int64) (user.User, error)
 	NewFilter(ctx context.Context) (Filter, error)
 	FindUser(ctx context.Context, userID int64) (int64, bool)
-	FindAd(ctx context.Context, adID int64) (int64, bool)
 	DeleteAd(ctx context.Context, adID, userID int64) (ads.Ad, error)
 	DeleteUser(ctx context.Context, userID int64) (user.User, error)
 }
@@ -196,11 +195,6 @@ func CheckAd(ad ads.Ad, filter Filter) bool {
 
 func (s StApp) FindUser(ctx context.Context, userID int64) (int64, bool) {
 	u, isFound := s.users.Find(ctx, userID)
-	return u, isFound
-}
-
-func (s StApp) FindAd(ctx context.Context, adID int64) (int64, bool) {
-	u, isFound := s.users.Find(ctx, adID)
 	return u, isFound
 }
 

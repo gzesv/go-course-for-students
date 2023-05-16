@@ -2,7 +2,9 @@ package tests
 
 import (
 	"context"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"homework10/internal/adapters/adfilters"
 	"homework10/internal/adapters/userrepo"
 	"net"
@@ -15,6 +17,12 @@ import (
 	"homework10/internal/adapters/adrepo"
 	"homework10/internal/app"
 	grpcPort "homework10/internal/ports/grpc"
+)
+
+var (
+	ErrorBadRequest = status.Error(codes.InvalidArgument, app.ErrWrongFormat.Error())
+	ErrorForbidden  = status.Error(codes.PermissionDenied, app.ErrAccessDenied.Error())
+	ErrorNotFound   = status.Error(codes.NotFound, "")
 )
 
 func GetTestClient(t *testing.T) (grpcPort.AdServiceClient, context.Context) {
@@ -63,6 +71,9 @@ func TestGRPCCreateUser(t *testing.T) {
 	assert.Equal(t, "name", res.Nickname)
 	assert.Equal(t, "somemail@mail.com", res.Email)
 	assert.Equal(t, int64(123), res.UserId)
+
+	_, err = client.CreateUser(ctx, &grpcPort.UniversalUser{Nickname: "abc", Email: "cat@mail.com", UserId: 123})
+	assert.ErrorIs(t, err, ErrorBadRequest)
 }
 
 func TestGRPCCreateAd(t *testing.T) {
@@ -72,12 +83,14 @@ func TestGRPCCreateAd(t *testing.T) {
 	assert.NoError(t, err)
 
 	res, err := client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "title", Text: "text", UserId: a.UserId})
-	assert.NoError(t, err, "client.CreateAd")
+	assert.NoError(t, err)
 	assert.Equal(t, "title", res.Title)
 	assert.Equal(t, "text", res.Text)
 	assert.Equal(t, a.UserId, res.AuthorId)
 	assert.Equal(t, false, res.Published)
 
+	_, err = client.CreateAd(ctx, &grpcPort.CreateAdRequest{Title: "cat", Text: "text", UserId: 5})
+	assert.ErrorIs(t, err, ErrorBadRequest)
 }
 
 func TestGRPCChangeAdStatus(t *testing.T) {
